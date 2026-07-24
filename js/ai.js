@@ -17,6 +17,24 @@ SD.ai = (function () {
   // only "thinking" models accept thinkingConfig; lite models reject it (400)
   var IS_THINKING = !/lite/i.test(MODEL);
 
+  // Two ways to reach Gemini:
+  //  - LOCAL DEV: a key in js/config.js -> call Gemini directly with ?key=
+  //  - DEPLOYED (Vercel): no local key -> POST to our /api/gemini serverless
+  //    proxy, which holds the key in an env var (never shipped to the client)
+  function proxyAvailable() {
+    if (location.protocol !== "http:" && location.protocol !== "https:") return false;
+    var h = location.hostname;
+    return h !== "localhost" && h !== "127.0.0.1" && h !== "0.0.0.0" && h !== "";
+  }
+  // where to POST a generateContent request, given the current key situation
+  function apiURL() {
+    return apiKey
+      ? ENDPOINT + "?key=" + encodeURIComponent(apiKey)          // direct, keyed
+      : "/api/gemini?model=" + encodeURIComponent(MODEL);        // server proxy
+  }
+  // is the AI reachable at all? (a real key OR a deployed proxy)
+  function aiReady() { return apiKey.length > 0 || proxyAvailable(); }
+
   function gcfg() {
     var g = {
       temperature: 1.0,
@@ -90,7 +108,7 @@ SD.ai = (function () {
       }],
       generationConfig: gcfg()
     };
-    return fetch(ENDPOINT + "?key=" + encodeURIComponent(apiKey), {
+    return fetch(apiURL(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -179,7 +197,8 @@ SD.ai = (function () {
   return {
     get key() { return apiKey; },
     setKey: function (k) { apiKey = (k || "").trim(); },
-    hasKey: function () { return apiKey.length > 0; },
+    // "has a way to reach the AI" - a local key OR the deployed proxy
+    hasKey: function () { return aiReady(); },
 
     /* settings drawer: cheap connectivity probe */
     testKey: function (k) {
@@ -220,7 +239,7 @@ SD.ai = (function () {
        to a line (canned fallback if no key / error) so the beat never dies. */
     taunt: function (d) {
       var canned = fallbackTaunt(d);
-      if (!apiKey) return Promise.resolve(canned);
+      if (!aiReady()) return Promise.resolve(canned);
       var body = {
         contents: [{ parts: [{ text: tauntPrompt(d) }] }],
         generationConfig: (function () {
@@ -229,7 +248,7 @@ SD.ai = (function () {
           return g;
         })()
       };
-      return fetch(ENDPOINT + "?key=" + encodeURIComponent(apiKey), {
+      return fetch(apiURL(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
