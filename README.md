@@ -45,33 +45,6 @@ Hit **DUEL NOW** → draw fast → the AI starts guessing. That's it.
 
 ---
 
-### Running it locally (optional)
-
-```bash
-cd SketchDuel
-python -m http.server 8000     # any static server works
-```
-Then open [http://localhost:8000](http://localhost:8000). No build step, no dependencies to install.
-Locally, put your Gemini key in `js/config.js` (gitignored):
-```js
-window.SKETCHDUEL_CONFIG = { GEMINI_API_KEY: "your-key-here" };
-```
-
-### The key, on deploy
-
-The key never ships to the browser. In production the client POSTs to a tiny
-serverless proxy — [`api/gemini.js`](api/gemini.js) — that holds the key in a
-Vercel **environment variable** and forwards requests to Gemini. To deploy:
-
-1. Push the repo (the local `js/config.js` stays gitignored — the deploy doesn't need it).
-2. In Vercel → **Project → Settings → Environment Variables**, add
-   `GEMINI_API_KEY` = *your key*.
-3. **Redeploy** so the variable takes effect.
-
-The browser auto-detects: a local `js/config.js` key → call Gemini directly;
-otherwise → route through `/api/gemini`. Nothing to toggle.
-
----
 
 ## 🎯 WHAT MAKES IT DIFFERENT
 
