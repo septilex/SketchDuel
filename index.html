@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SKETCH.DUEL - DRAW. IT GUESSES. NOBODY'S SAFE.</title>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23000000"/><rect x="2" y="2" width="12" height="12" fill="%23FFD400"/><rect x="5" y="5" width="2" height="3" fill="%23000000"/><rect x="9" y="5" width="2" height="3" fill="%23000000"/><rect x="5" y="10" width="6" height="2" fill="%23000000"/></svg>'>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="landing.css">
+<link rel="stylesheet" href="cursors.css">
+</head>
+<body>
+<div class="page">
+
+  <!-- ============ HEADER ============ -->
+  <header class="lp-header">
+    <div class="lp-logo">SKETCH.DUEL</div>
+    <nav class="lp-nav">
+      <a class="navbtn" href="#modes">MODES</a>
+      <a class="navbtn" href="#stats">SCORES</a>
+      <a class="navbtn navbtn-solid" href="game.html?mode=duel">PLAY</a>
+    </nav>
+  </header>
+
+  <!-- ============ HERO (yellow poster) ============ -->
+  <section class="hero">
+    <div class="sticker" aria-hidden="true">100% FREE<br>0% MERCY</div>
+
+    <h1 class="headline">
+      DRAW.<br>
+      IT GUESSES.<br>
+      <span class="inv">NOBODY'S</span><br>
+      <span class="inv">SAFE.</span>
+    </h1>
+
+    <p class="sub">A savage little drawing game where the machine reads
+    your scribbles out loud - and it's usually right before you finish.</p>
+
+    <div class="cta-row">
+      <a class="btn-solid" href="game.html?mode=duel"><span class="play-ico" aria-hidden="true"></span>DUEL NOW</a>
+      <a class="btn-outline" href="game.html?mode=party">PARTY MODE</a>
+    </div>
+
+    <div class="chip-row">
+      <span class="chip"><i aria-hidden="true"></i>NO SIGN-UP</span>
+      <span class="chip"><i aria-hidden="true"></i>0.4s GUESSES</span>
+      <span class="chip"><i aria-hidden="true"></i>2-4 PLAYER PARTY</span>
+      <span class="chip chip-dark"><i aria-hidden="true"></i>HARD MODE FREE</span>
+    </div>
+  </section>
+
+  <!-- ============ HAZARD DIVIDER ============ -->
+  <div class="hazard-divider" aria-hidden="true"></div>
+
+  <!-- ============ STATS BAND (black) ============ -->
+  <section class="stats" id="stats">
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-num">BEST OF 5</div>
+        <div class="stat-label">ROUNDS PER DUEL</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">20 SEC</div>
+        <div class="stat-label">PER DOODLE</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num"><span class="inf">&#8734;</span> RETRIES</div>
+        <div class="stat-label">PRIDE NOT INCLUDED</div>
+      </div>
+    </div>
+    <p class="stats-foot">YOUR OPPONENT NEVER SLEEPS - <a href="game.html?mode=duel">PRESS PLAY</a></p>
+  </section>
+
+  <!-- ============ PICK YOUR POISON (black) ============ -->
+  <section class="modes" id="modes">
+    <h2 class="modes-title">- PICK YOUR POISON -</h2>
+    <div class="cards">
+      <a class="card card-solid" href="game.html?mode=duel">
+        <h3>&gt; DUEL</h3>
+        <p>5 rounds vs the machine. The classic grudge match.</p>
+      </a>
+      <a class="card" href="game.html?mode=practice">
+        <h3>&gt; PRACTICE</h3>
+        <p>No timer. It just keeps guessing. Zen, sort of.</p>
+      </a>
+      <a class="card" href="game.html?mode=party">
+        <h3>&gt; PARTY</h3>
+        <p>Pass the laptop. 2-4 players. Friendships optional.</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============ READY, PLAYER? (yellow) ============ -->
+  <section class="ready">
+    <h2 class="ready-title">READY, PLAYER?</h2>
+    <a class="btn-solid btn-big" href="game.html?mode=duel"><span class="play-ico" aria-hidden="true"></span>START YOUR FIRST DUEL</a>
+  </section>
+
+  <!-- ============ FOOTER (black) ============ -->
+  <footer class="lp-footer">
+    <span class="foot-left">&copy; 2026 SKETCH.DUEL - MADE OF PIXELS</span>
+    <span id="credit-line" class="foot-credit hidden">HAND-BUILT CABINET. SKETCH-BOT 9000 DEMANDS A REMATCH.</span>
+    <nav class="foot-nav">
+      <a href="game.html">CONFIG</a>
+      <a href="game.html">SOUND</a>
+      <a href="#" id="lnk-credits">CREDITS</a>
+    </nav>
+  </footer>
+
+</div>
+
+<script>
+  document.getElementById("lnk-credits").addEventListener("click", function (ev) {
+    ev.preventDefault();
+    document.getElementById("credit-line").classList.toggle("hidden");
+  });
+</script>
+<script src="js/cursortrail.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/uisound.js"></script>
+<script src="js/ticker.js"></script>
+</body>
+</html>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SKETCHDUEL - DRAW. IT GUESSES. NOBODY'S SAFE.</title>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%230a0a08"/><rect x="2" y="2" width="12" height="12" fill="%23ffd400"/><rect x="5" y="5" width="2" height="3" fill="%230a0a08"/><rect x="9" y="5" width="2" height="3" fill="%230a0a08"/><rect x="5" y="10" width="6" height="2" fill="%230a0a08"/></svg>'>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="cursors.css">
+</head>
+<body>
+
+<!-- CRT ATMOSPHERE -->
+<div id="scanlines" aria-hidden="true"></div>
+<div id="vignette" aria-hidden="true"></div>
+<div id="flicker" aria-hidden="true"></div>
+
+<!-- TOP BAR -->
+<header id="topbar">
+  <a id="logo" href="index.html">SKETCH<span class="logo-sq" aria-hidden="true"></span>DUEL</a>
+  <div id="hud" class="hidden">
+    <span id="hud-player">P1</span>
+    <span class="hud-sep" aria-hidden="true"></span>
+    <span id="hud-round">ROUND 01/05</span>
+    <span class="hud-sep" aria-hidden="true"></span>
+    <span id="hud-score">SCORE 0000</span>
+    <span id="hud-streak" class="hidden">STREAK x2</span>
+  </div>
+  <div id="top-actions">
+    <button id="btn-mute" class="btn btn-mini btn-alt" type="button">SND:ON</button>
+    <button id="btn-settings" class="btn btn-mini btn-alt" type="button">CONFIG</button>
+  </div>
+</header>
+
+<main id="app">
+
+  <!-- ============ MENU ============ -->
+  <section id="screen-menu" class="screen">
+    <canvas id="menu-bg" aria-hidden="true"></canvas>
+    <div id="menu-box">
+
+      <div id="menu-head">
+        <div id="menu-bot" aria-hidden="true"></div>
+        <div id="title-wrap">
+          <h1 id="title">SKETCH<span class="logo-sq big" aria-hidden="true"></span>DUEL</h1>
+          <div id="title-bar" aria-hidden="true"></div>
+          <p id="tagline">DRAW. IT GUESSES. NOBODY'S SAFE.</p>
+        </div>
+      </div>
+
+      <div class="panel" id="menu-panel">
+        <div class="hazard"><span class="hz-label">&#9668; SELECT MODE &#9658;</span></div>
+        <div class="panel-body" id="menu-panel-body">
+          <div id="menu-btns">
+            <button class="btn btn-menu" id="btn-mode-duel" type="button">
+              <span class="menu-arrow" aria-hidden="true">&gt;</span> DUEL
+              <span class="menu-sub">5 ROUNDS VS THE MACHINE</span>
+            </button>
+            <button class="btn btn-menu" id="btn-mode-practice" type="button">
+              <span class="menu-arrow" aria-hidden="true">&gt;</span> PRACTICE
+              <span class="menu-sub">NO TIMER. IT JUST KEEPS GUESSING.</span>
+            </button>
+            <button class="btn btn-menu" id="btn-mode-party" type="button">
+              <span class="menu-arrow" aria-hidden="true">&gt;</span> PARTY
+              <span class="menu-sub">PASS THE LAPTOP. 2-4 PLAYERS.</span>
+            </button>
+          </div>
+
+          <div id="diff-row">
+            <span class="diff-label">SIGNAL LEVEL:</span>
+            <button class="btn btn-mini btn-alt diff sel" data-diff="easy" type="button">EASY</button>
+            <button class="btn btn-mini btn-alt diff" data-diff="medium" type="button">MED</button>
+            <button class="btn btn-mini btn-alt diff" data-diff="hard" type="button">HARD</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ DUEL MATCH SETUP ============ -->
+  <section id="screen-setup" class="screen hidden">
+    <canvas id="setup-bg" aria-hidden="true"></canvas>
+    <div id="setup-inner">
+      <div id="setup-head">
+        <div id="setup-bot" aria-hidden="true"></div>
+        <div class="sd-title-wrap">
+          <h1 class="sd-title">SKETCH<span class="logo-sq big" aria-hidden="true"></span>DUEL</h1>
+          <div class="sd-title-bar" aria-hidden="true"></div>
+          <p class="sd-tagline">DRAW. IT GUESSES. NOBODY'S SAFE.</p>
+        </div>
+      </div>
+      <div class="panel" id="setup-box">
+      <div class="hazard"><span class="hz-label">MATCH SETUP - DUEL</span></div>
+      <div class="panel-body">
+        <div class="setup-row">
+          <span class="diff-label">SIGNAL LEVEL:</span>
+          <button class="btn btn-mini btn-alt diff sel" data-diff="easy" type="button">EASY</button>
+          <button class="btn btn-mini btn-alt diff" data-diff="medium" type="button">MED</button>
+          <button class="btn btn-mini btn-alt diff" data-diff="hard" type="button">HARD</button>
+        </div>
+        <div class="setup-row">
+          <span class="diff-label">ROUNDS:</span>
+          <button class="btn btn-mini btn-alt rcount" data-rounds="3" type="button">3</button>
+          <button class="btn btn-mini btn-alt rcount sel" data-rounds="5" type="button">5</button>
+          <button class="btn btn-mini btn-alt rcount" data-rounds="7" type="button">7</button>
+        </div>
+        <p class="dim-note" id="setup-note">FINAL ROUND IS SUDDEN DEATH: 20 SECONDS, HARD WORD, DOUBLE POINTS.</p>
+        <div class="btn-row">
+          <button id="btn-start-match" class="btn" type="button">START MATCH [ENTER]</button>
+          <button id="btn-setup-back" class="btn btn-alt" type="button">BACK</button>
+        </div>
+      </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PARTY SETUP ============ -->
+  <section id="screen-party" class="screen hidden">
+    <div class="panel" id="party-box">
+      <div class="hazard"><span class="hz-label">PARTY MODE - ENTER CHALLENGERS</span></div>
+      <div class="panel-body">
+        <div id="party-count-row">
+          <span class="diff-label">PLAYERS:</span>
+          <button class="btn btn-mini btn-alt pcount sel" data-count="2" type="button">2</button>
+          <button class="btn btn-mini btn-alt pcount" data-count="3" type="button">3</button>
+          <button class="btn btn-mini btn-alt pcount" data-count="4" type="button">4</button>
+        </div>
+        <div id="party-names"></div>
+        <p class="dim-note">3 ROUNDS EACH. HIGHEST SCORE TAKES THE CABINET.</p>
+        <div class="btn-row">
+          <button id="btn-party-start" class="btn" type="button">START [ENTER]</button>
+          <button id="btn-party-back" class="btn btn-alt" type="button">BACK</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PASS THE LAPTOP ============ -->
+  <section id="screen-pass" class="screen hidden">
+    <div class="panel" id="pass-box">
+      <div class="hazard"><span class="hz-label">PLAYER CHANGE</span></div>
+      <div class="panel-body center">
+        <p class="word-pre">PASS THE LAPTOP TO</p>
+        <div id="pass-name">RIYA</div>
+        <p class="dim-note">EVERYONE ELSE: EYES OFF THE SCREEN.</p>
+        <button id="btn-pass-ready" class="btn" type="button">I'M HERE [ENTER]</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ WORD REVEAL ============ -->
+  <section id="screen-word" class="screen hidden">
+    <canvas id="word-bg" aria-hidden="true"></canvas>
+    <div id="word-vignette" aria-hidden="true"></div>
+    <div class="panel" id="word-box">
+      <div class="hazard word-hazard" id="word-round-label"><span class="hz-label">ROUND 01/05</span></div>
+      <div class="panel-body center">
+        <p class="word-pre">YOUR SECRET WORD:</p>
+        <div id="word-row">
+          <canvas class="word-icon" id="word-icon-l" width="12" height="12" aria-hidden="true"></canvas>
+          <div id="word-display">VOLCANO</div>
+          <canvas class="word-icon" id="word-icon-r" width="12" height="12" aria-hidden="true"></canvas>
+        </div>
+        <p class="word-warn">DON'T SAY IT OUT LOUD. THE MACHINE IS LISTENING<span class="cursor" aria-hidden="true">_</span></p>
+        <button id="btn-word-start" class="btn" type="button">START ROUND [ENTER]</button>
+        <p class="word-hint">[TAB] SKIP WORD &middot; NEXT UP: ????</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ GAME ============ -->
+  <section id="screen-game" class="screen hidden">
+    <div id="game-grid">
+      <div id="timer-row">
+        <div id="timer-blocks" aria-hidden="true"></div>
+        <div id="timer-num">60</div>
+      </div>
+      <div id="game-main">
+        <div id="canvas-col">
+          <div id="canvas-wrap">
+            <canvas id="pad"></canvas>
+            <div id="canvas-hint" class="hidden">INK DETECTED: NONE - DRAW SOMETHING</div>
+
+            <div id="stamp" class="hidden">
+              <div id="stamp-inner">
+                <div id="stamp-title">IT GUESSED IT!</div>
+                <div id="stamp-sub">VOLCANO - 8.2s</div>
+                <div id="stamp-pts">+92 PTS</div>
+                <div id="stamp-taunt" aria-live="polite"></div>
+                <div id="stamp-hint" class="blink">PRESS [ENTER]</div>
+              </div>
+            </div>
+
+            <div id="confirmbar" class="hidden">
+              <span id="confirm-text">CLOSE CALL: "HOME" ~ "HOUSE"?</span>
+              <button id="btn-confirm-y" class="btn btn-mini" type="button">[Y] COUNT IT</button>
+              <button id="btn-confirm-n" class="btn btn-mini btn-alt" type="button">[N] NOPE</button>
+            </div>
+          </div>
+          <div id="toolbar">
+            <div class="tool-group" id="swatches">
+              <button class="swatch sel" data-color="#ffd400" style="--ink:#ffd400" type="button" aria-label="yellow ink"></button>
+              <button class="swatch" data-color="#f2f2e9" style="--ink:#f2f2e9" type="button" aria-label="white ink"></button>
+              <button class="swatch" data-color="#00ffff" style="--ink:#00ffff" type="button" aria-label="cyan ink"></button>
+              <button class="swatch" data-color="#ff00ff" style="--ink:#ff00ff" type="button" aria-label="magenta ink"></button>
+            </div>
+            <div class="tool-group" id="sizes">
+              <button class="btn btn-mini btn-alt sizebtn" data-size="3" type="button">S</button>
+              <button class="btn btn-mini btn-alt sizebtn sel" data-size="6" type="button">M</button>
+              <button class="btn btn-mini btn-alt sizebtn" data-size="12" type="button">L</button>
+            </div>
+            <div class="tool-group">
+              <button id="btn-eraser" class="btn btn-mini btn-alt" type="button">ERASER</button>
+              <button id="btn-undo" class="btn btn-mini btn-alt" type="button">UNDO</button>
+              <button id="btn-clear" class="btn btn-mini btn-alt" type="button">CLEAR</button>
+            </div>
+            <div id="keys-hint">[1-3] SIZE / [E] ERASER / [B] BRUSH / [CTRL+Z] UNDO / [C] CLEAR</div>
+          </div>
+        </div>
+
+        <aside id="sidebar">
+          <div class="panel" id="bot-panel">
+            <div class="hazard"><span class="hz-label">SKETCH-BOT 9000</span></div>
+            <div id="bot-face">
+              <div id="bot-sprite" aria-hidden="true"></div>
+              <div id="radar" class="hidden" aria-hidden="true"></div>
+            </div>
+            <div id="bot-status">AI STATUS: STANDBY</div>
+          </div>
+          <div class="panel" id="feed-panel">
+            <div class="hazard"><span class="hz-label">GUESS FEED</span></div>
+            <div id="feed"></div>
+          </div>
+          <div class="panel" id="target-panel">
+            <div class="panel-body target-body">
+              <div id="target-label">TARGET</div>
+              <div id="target-word">????</div>
+              <button id="btn-give-up" class="btn btn-mini btn-alt" type="button">FORFEIT</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RESULTS ============ -->
+  <section id="screen-results" class="screen hidden">
+    <div class="panel" id="results-box">
+      <div class="hazard" id="results-title"><span class="hz-label">MATCH COMPLETE</span></div>
+      <div class="panel-body" id="results-body">
+        <div id="results-left">
+          <div id="results-trophy" aria-hidden="true"></div>
+          <div id="results-total">TOTAL: 0342</div>
+          <div id="results-list"></div>
+        </div>
+        <div id="results-right">
+          <div id="replay-label">BEST SKETCH: VOLCANO - 8.2s</div>
+          <canvas id="replay-canvas" width="320" height="240"></canvas>
+          <button id="btn-poster" class="btn btn-mini" type="button">&#9660; WANTED POSTER</button>
+          <div id="spectator" class="hidden">
+            <div id="spectator-label">SCAN - SPECTATOR SCOREBOARD</div>
+            <canvas id="spectator-qr" width="220" height="220"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="btn-row center-row">
+        <span id="rematch-label">REMATCH?</span>
+        <button id="btn-rematch" class="btn" type="button">[Y] YES</button>
+        <button id="btn-results-menu" class="btn btn-alt" type="button">[N] MENU</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ COUNTDOWN OVERLAY ============ -->
+<div id="countdown" class="hidden">
+  <div id="countdown-num">3</div>
+</div>
+
+<!-- ============ ATTRACT MODE (idle demo) ============ -->
+<div id="attract" class="hidden" aria-hidden="true">
+  <div id="attract-inner">
+    <div id="attract-tag">- ATTRACT MODE -</div>
+    <canvas id="attract-canvas" width="520" height="380"></canvas>
+    <div id="attract-guess">SKETCH-BOT SEES...</div>
+    <div id="attract-cta" class="blink">INSERT BRAIN TO CONTINUE</div>
+    <div id="attract-sub">MOVE / CLICK / PRESS ANY KEY</div>
+  </div>
+</div>
+
+<!-- ============ SETTINGS DRAWER ============ -->
+<aside id="settings" class="closed">
+  <div class="hazard"><span class="hz-label">SYSTEM CONFIG</span></div>
+  <div id="settings-body">
+    <label class="cfg-label" for="inp-key">GEMINI API KEY</label>
+    <input id="inp-key" type="password" autocomplete="off" spellcheck="false" placeholder="PASTE KEY HERE">
+    <p class="dim-note">FREE KEY: AISTUDIO.GOOGLE.COM &gt; GET API KEY.<br>TIP: PASTE IT IN js/config.js ONCE AND SKIP THIS SCREEN FOREVER.</p>
+    <div class="btn-row">
+      <button id="btn-save-key" class="btn btn-mini" type="button">SAVE</button>
+      <button id="btn-test-key" class="btn btn-mini btn-alt" type="button">TEST LINK</button>
+    </div>
+    <p id="key-status" class="cfg-status"></p>
+
+    <label class="cfg-label">BOT VOICE</label>
+    <div id="voice-picker">
+      <button id="voice-current" type="button">SYSTEM DEFAULT</button>
+      <div id="voice-list" class="hidden"></div>
+    </div>
+    <p class="dim-note">HOVER A VOICE - IT INTRODUCES ITSELF.</p>
+    <div class="btn-row">
+      <button id="btn-test-voice" class="btn btn-mini btn-alt" type="button">TEST VOICE</button>
+    </div>
+
+    <button id="btn-close-settings" class="btn" type="button">CLOSE [ESC]</button>
+  </div>
+</aside>
+
+<script src="js/config.js"></script>
+<script src="js/words.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/uisound.js"></script>
+<script src="js/confetti.js"></script>
+<script src="js/poster.js"></script>
+<script src="js/vendor/qrcode.js"></script>
+<script src="js/spectator.js"></script>
+<script src="js/sprite.js"></script>
+<script src="js/wordart.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/game.js"></script>
+<script src="js/cursortrail.js"></script>
+<script src="js/ticker.js"></script>
+</body>
+</html>

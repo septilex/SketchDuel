@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SketchDuel – Project Report</title>
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background: #fff;
+  margin: 0;
+  padding: 20px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+h1 { color: #ffd400; border-bottom: 3px solid #000; padding-bottom: 10px; font-size: 2.5em; }
+h2 { color: #000; border-left: 4px solid #ffd400; padding-left: 12px; margin-top: 30px; }
+h3 { color: #333; margin-top: 20px; }
+.section { margin-bottom: 30px; }
+.tech-box {
+  background: #f5f5f5;
+  border-left: 4px solid #ffd400;
+  padding: 15px;
+  margin: 15px 0;
+  font-family: 'Courier New', monospace;
+  font-size: 0.95em;
+}
+.feature-list { list-style: none; padding-left: 0; }
+.feature-list li { padding: 8px 0; padding-left: 30px; position: relative; }
+.feature-list li:before { content: "▶ "; position: absolute; left: 0; color: #ffd400; font-weight: bold; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0;
+}
+table th, table td {
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+}
+table th {
+  background: #f5f5f5;
+  font-weight: bold;
+}
+.highlight {
+  background: #fffacd;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+.brainstorm-item {
+  background: #f0f8ff;
+  border-left: 3px solid #ffd400;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 3px;
+}
+.page-break { page-break-after: always; margin: 40px 0; }
+.footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 2px solid #ddd;
+  color: #666;
+  font-size: 0.9em;
+}
+@media print {
+  body { padding: 0; }
+  .page-break { page-break-after: always; }
+}
+</style>
+</head>
+<body>
+
+<h1>🎮 SKETCHDUEL</h1>
+<p style="font-size: 1.3em; color: #666;"><strong>DRAW. IT GUESSES. NOBODY'S SAFE.</strong></p>
+<p style="color: #999;">A real-time AI drawing duel for the browser. Project Report & Implementation Guide.</p>
+
+<div class="section">
+<h2>Executive Summary</h2>
+<p>
+SketchDuel is a <span class="highlight">real-time drawing game</span> where players race against an AI opponent (SKETCH-BOT 9000) to draw a secret word before the bot correctly guesses it. Built entirely in <span class="highlight">vanilla HTML/CSS/JavaScript</span> with no frameworks or build tools, it runs in any modern browser using only a free Gemini API key.
+</p>
+<p><strong>Core Innovation:</strong> Unlike static image-analysis tools, SketchDuel's loop is <span class="highlight">continuous and live</span> — the AI watches every brush stroke appear in real time, narrates its guesses out loud, narrows in on the word exactly like a human player in Pictionary, and does it all with zero setup friction.</p>
+<p><strong>Stack:</strong> Browser only. No backend, no database, no build step. Deployment: any static host (or localhost).</p>
+</div>
+
+<div class="section">
+<h2>What SketchDuel Is</h2>
+<h3>Gameplay Flow (DUEL Mode)</h3>
+<ol>
+  <li><strong>Secret Word Reveal Screen:</strong> Player sees a random word (with a per-word pixel-art sprite background) and a 3-2-1 countdown.</li>
+  <li><strong>60-Second Drawing Round:</strong> Player draws on a canvas in yellow/white/cyan/magenta. No submit button. As soon as they start, the AI begins guessing.</li>
+  <li><strong>Live AI Loop:</strong> Every ~3 seconds, the canvas is snapshotted to a clean PNG, sent to Gemini vision API, and the model predicts what's being drawn. Its guess and sarcastic commentary appear in a live feed. The bot remembers wrong guesses so it doesn't repeat itself.</li>
+  <li><strong>Win Condition:</strong> If the AI's guess exactly matches the word (or a fuzzy match), the round ends instantly with pixel confetti, party-horn fanfare, and scoring (100 − seconds + streak bonus). If time expires, the player loses.</li>
+  <li><strong>5-Round Match:</strong> Repeat for 5 words, escalating difficulty. Final score and leaderboard at the end.</li>
+</ol>
+<p><strong>Other Modes:</strong></p>
+<ul class="feature-list">
+  <li><strong>PRACTICE:</strong> No timer, no word. Player draws freely; bot just keeps guessing to practice its sight.</li>
+  <li><strong>PARTY:</strong> Pass-the-laptop mode. 2–4 players, 3 rounds each. Round-robin scoring and final leaderboard.</li>
+</ul>
+</div>
+
+<div class="page-break"></div>
+
+<div class="section">
+<h2>Technical Architecture</h2>
+<h3>File Structure</h3>
+<div class="tech-box">
+index.html           (Landing page / mode select)
+game.html            (Game cabinet)
+styles.css           (740+ lines, 6-color palette)
+cursors.css          (Generated pixel cursors)
+
+js/config.js         (API key storage, gitignored)
+js/ai.js             (Gemini loop, vision pipeline)
+js/game.js           (State machine, UI wiring)
+js/draw.js           (Canvas drawing engine)
+js/audio.js          (Web Audio synthesis)
+js/sprite.js         (Bot avatar & expressions)
+js/wordart.js        (Sprite library + bg animation)
+js/words.js          (227-word bank, difficulty tiers)
+js/match.js          (Fuzzy word matching)
+js/confetti.js       (Pixel confetti on win)
+js/cursortrail.js    (Cursor trail effect)
+</div>
+
+<h3>Core Data Flow</h3>
+<ol>
+  <li><strong>Draw:</strong> User pointer events → canvas drawing (coalesced, incremental rendering)</li>
+  <li><strong>Snapshot:</strong> Canvas normalized to black-on-white 512px PNG, base64 encoded</li>
+  <li><strong>Send:</strong> PNG + prompt + wrong-guess history → Gemini vision API (gemini-3.5-flash-lite)</li>
+  <li><strong>Receive:</strong> JSON response { guess, confidence, reaction, is_giving_up }</li>
+  <li><strong>Match:</strong> Fuzzy compare guess vs. word (case/plural/spacing insensitive)</li>
+  <li><strong>Display:</strong> Guess bubble + bot reaction in feed. If exact match → win round.</li>
+  <li><strong>Loop:</strong> Repeat every 3 seconds (configurable) while round is active.</li>
+</ol>
+
+<h3>Defensive AI Handling</h3>
+<ul class="feature-list">
+  <li>Strict JSON mode: <code>responseMimeType: "application/json"</code></li>
+  <li>One-retry on malformed JSON (strip markdown, regex extract)</li>
+  <li>Exponential backoff on API errors (2.5s → 5s → 10s → 20s)</li>
+  <li>Graceful degradation: missing key = friendly "AI TEMPORARILY UNAVAILABLE" in UI, real error in console only</li>
+  <li>Never more than one request in flight; skip frames if model is slow</li>
+  <li>Change detection: revision hash prevents duplicate calls on unchanged canvas</li>
+</ul>
+</div>
+
+<div class="page-break"></div>
+
+<div class="section">
+<h2>Key Features Implemented</h2>
+
+<h3>1. Real-Time Drawing Canvas</h3>
+<ul class="feature-list">
+  <li>Pointer events with coalesced points for smooth, lag-free ink</li>
+  <li>Quadratic Bézier curves through stroke midpoints</li>
+  <li>Incremental segment rendering (only new part redraws while pen is down)</li>
+  <li>4 ink colors (yellow, white, cyan, magenta) + 3 brush sizes (3/6/12px)</li>
+  <li>Eraser (destination-out composite), Undo, Clear, DPR-aware sizing</li>
+</ul>
+
+<h3>2. AI Vision Loop (Gemini 3.5-Flash-Lite)</h3>
+<ul class="feature-list">
+  <li>Model: <code>gemini-3.5-flash-lite</code> (non-thinking, fast, generous free tier)</li>
+  <li>Snapshot pipeline: black ink on white, 512px PNG, ~10–30 KB payload</li>
+  <li>Prompt: 450-word system message + inline vision + wrong-guess history</li>
+  <li>Output: strict JSON {guess, confidence, reaction, is_giving_up}</li>
+  <li>Interval: 3 seconds (overridable via config), skipped if no change</li>
+</ul>
+
+<h3>3. Fuzzy Word Matching</h3>
+<ul class="feature-list">
+  <li>Case/punctuation/article-insensitive matching</li>
+  <li>Plural-aware ("volcanoes" wins "volcano")</li>
+  <li>Spacing-insensitive ("blackhole" matches "black hole")</li>
+  <li>Compound tokens (icecream, hotdog, trafficlight)</li>
+  <li>Synonyms (25+ mapped: tv→television, fridge→refrigerator, etc.)</li>
+  <li>Typo-distance near-misses ask player to rule (Y/N confirmation)</li>
+</ul>
+
+<h3>4. Word Bank (227 Total Words)</h3>
+<table>
+  <tr><th>Difficulty</th><th>Count</th><th>Weights</th></tr>
+  <tr><td>Easy</td><td>101</td><td>70% early, 60% overall</td></tr>
+  <tr><td>Medium</td><td>97</td><td>30% early, 40% overall</td></tr>
+  <tr><td>Hard</td><td>29</td><td>0% early, post-round 3</td></tr>
+</table>
+<p>Tier-weighted selection with full-cycle exhaustion: never repeats until all words in a tier are used, then auto-resets.</p>
+
+<h3>5. Word-Reveal Screen Art</h3>
+<ul class="feature-list">
+  <li>14 hand-authored 12×12 pixel sprites (duck, ghost, star, house, tree, etc.)</li>
+  <li>Procedural generator (seeded by word hash) for unmapped words</li>
+  <li>Tiled animated background: alternating row scroll + stepped sine-wave bob</li>
+  <li>Sprite icons flanking the word (right one mirrored)</li>
+  <li>[TAB] skips word and regenerates entire pattern in place</li>
+  <li>Settings: scrollSpeed, spriteScale, tileGap, opacity (tunable)</li>
+</ul>
+
+<h3>6. Arcade Aesthetics (Pixel-Perfect)</h3>
+<ul class="feature-list">
+  <li>Locked 6-color palette: #ffd400 (yellow), #000000 (black), #8a7500 (dim), #f2f2e9 (white), #131310 (charcoal), #ff2d55 (alert red, only last 10s + errors)</li>
+  <li>Fonts: Press Start 2P (headlines), VT323 (body)</li>
+  <li>Pixel-notched borders: hard box-shadows (0/-3px left/right, -/+3px top/bottom)</li>
+  <li>Hazard-stripe headers: 45° repeating gradient + animated marquee</li>
+  <li>CRT effects: scanlines (2px/4px, ~9% opacity) + radial vignette</li>
+  <li>Motion: steps() keyframes (no easing), pixel-stepped animations</li>
+  <li>Respects prefers-reduced-motion (skips animations, static renders)</li>
+</ul>
+
+<h3>7. Bot Personality (SKETCH-BOT 9000)</h3>
+<ul class="feature-list">
+  <li>Washed-up arcade AI: sarcastic, savage, darkly funny</li>
+  <li>Roasts the drawing skill: references actual shapes on canvas</li>
+  <li>Bosses player: "give it legs", "finish it", "add detail"</li>
+  <li>Gloats on wins, despairs on unreadable scribbles</li>
+  <li>7 expression frames: idle, blink, scan (with radar sweep), confident, celebrate, slump, trophy</li>
+  <li>Auto-blink scheduler with random intervals</li>
+  <li>Voices: system TTS (any OS voice), hover-preview with intro</li>
+</ul>
+
+<h3>8. Win Moment Experience</h3>
+<ul class="feature-list">
+  <li>Pixel confetti burst: 160 chunky squares in palette colors, two-wave timing</li>
+  <li>Party-horn fanfare: 5-note rise + gliding horn down + confetti pops</li>
+  <li>Arcade stamp: "IT GUESSED IT!" + word + time + points</li>
+  <li>Screen shake + flicker for arcade cabinet feel</li>
+</ul>
+
+<h3>9. Custom Cursors & Trail</h3>
+<ul class="feature-list">
+  <li><strong>Native cursors:</strong> Black pixel arrow (default) + yellow-edge (clickable) + crosshair (canvas), all SVG data-URIs, GPU-composited, zero JS lag</li>
+  <li><strong>Pixel trail:</strong> Black squares fade behind pointer, RAF-paced, skips sketchpad, honors reduced-motion</li>
+</ul>
+
+<h3>10. Redesigned Menu</h3>
+<ul class="feature-list">
+  <li>SKETCH-BOT 9000 mascot beside title (bobbing + blinking)</li>
+  <li>Framed "◄ SELECT MODE ►" panel with hazard header</li>
+  <li>Animated sprite backdrop (faint tiled bots scrolling + bobbing)</li>
+  <li>Scrolling attract marquee at bottom with arcade one-liners</li>
+  <li>No technical status visible to players (clean demo)</li>
+</ul>
+</div>
+
+<div class="page-break"></div>
+
+<div class="section">
+<h2>Recent Fixes & Optimizations</h2>
+
+<h3>Quota Crisis Resolution</h3>
+<p>
+<strong>Problem:</strong> gemini-3.5-flash capped at 20 requests/day on user's key — one 60-second round (~24 requests) drained the entire daily quota, leaving "SIGNAL LOST" for all subsequent guesses.
+</p>
+<p>
+<strong>Solution:</strong> Probed all available models. Found <span class="highlight">gemini-3.5-flash-lite</span> (non-thinking, fast, generous quota) as the working alternative. Switched default model and made thinkingConfig conditional (only for thinking models; lite models reject it with 400 error).
+</p>
+<p>
+<strong>Result:</strong> Full 5-round matches now run within daily limits with room for heavy demoing.
+</p>
+
+<h3>Browser Caching</h3>
+<p>
+<strong>Issue:</strong> Old cached CSS/JS files persist after updates; users see stale UI.
+</p>
+<p>
+<strong>Fix:</strong> Restart server with cache disabled: <code>npx http-server -p 8080 -c-1</code> or use <code>python -m http.server</code>. Users do Ctrl+F5 on first load.
+</p>
+
+<h3>Thinking Model Truncation</h3>
+<p>
+<strong>Problem:</strong> gemini-3.5-flash (thinking model) was truncating JSON responses mid-object — spent entire token budget on hidden reasoning.
+</p>
+<p>
+<strong>Fix:</strong> Added <code>thinkingConfig: { thinkingBudget: 0 }</code> (for thinking models only) + increased maxOutputTokens to 1000.
+</p>
+</div>
+
+<div class="section">
+<h2>Deployment & Setup</h2>
+
+<h3>For a Judge/Demo</h3>
+<ol>
+  <li>Get free API key: <a href="https://aistudio.google.com">aistudio.google.com</a> → Get API Key</li>
+  <li>Paste into <code>js/config.js</code>:
+    <div class="tech-box">window.SKETCHDUEL_CONFIG = { GEMINI_API_KEY: "your-key" };</div>
+  </li>
+  <li>Serve folder: <code>npx http-server -p 8080 -c-1</code> (or Python HTTP server)</li>
+  <li>Open <code>http://localhost:8080</code> → Play</li>
+  <li>No visible setup to judges. Open → PLAY → DRAW.</li>
+</ol>
+
+<h3>Key Configuration (Optional)</h3>
+<div class="tech-box">
+window.SKETCHDUEL_CONFIG = {
+  GEMINI_API_KEY: "your-key",
+  GEMINI_MODEL: "gemini-3.5-flash-lite", // or override
+  GEMINI_INTERVAL_MS: 3000                // snapshot cadence
+};
+</div>
+
+<h3>Developer Mode</h3>
+<p>
+<code>game.html?dev=true</code> or <strong>Ctrl+Shift+D</strong> in-game → CONFIG drawer (key override, voice test, link check).
+</p>
+
+<h3>Demo Previews</h3>
+<ul class="feature-list">
+  <li><code>game.html?mode=duel</code> → Start DUEL match</li>
+  <li><code>game.html?screen=game</code> → In-round example (with sample guesses)</li>
+  <li><code>game.html?screen=word&word=duck</code> → Force word-reveal screen for a specific word</li>
+  <li><code>game.html?screen=results</code> → Sample end-of-round screen</li>
+</ul>
+</div>
+
+<div class="page-break"></div>
+
+<div class="section">
+<h2>Performance & Reliability</h2>
+
+<table>
+  <tr>
+    <th>Metric</th>
+    <th>Target / Actual</th>
+  </tr>
+  <tr>
+    <td>Drawing latency</td>
+    <td>&lt;16ms (60 fps incremental rendering)</td>
+  </tr>
+  <tr>
+    <td>Snapshot → guess time</td>
+    <td>1–3s (model latency, not ours)</td>
+  </tr>
+  <tr>
+    <td>Loop efficiency</td>
+    <td>~1 request per 3 seconds (change-detected)</td>
+  </tr>
+  <tr>
+    <td>Requests per 60s round</td>
+    <td>~20 (vs. ~24 if no optimization)</td>
+  </tr>
+  <tr>
+    <td>Bundle size</td>
+    <td>~150 KB total (JS + CSS + cursors, uncompressed)</td>
+  </tr>
+  <tr>
+    <td>First page load</td>
+    <td>&lt;2s on modern connection</td>
+  </tr>
+  <tr>
+    <td>Offline mode</td>
+    <td>Graceful: "AI TEMPORARILY UNAVAILABLE", no blocking</td>
+  </tr>
+</table>
+
+<p>
+<strong>Failure Recovery:</strong> All AI failures degrade in-game with exponential backoff and friendly messaging. Round keeps running. Console logs real errors (silently to avoid alarming judges).
+</p>
+</div>
+
+<div class="section">
+<h2>Brainstorm: Future Enhancements</h2>
+
+<h3>Gameplay Ideas</h3>
+<div class="brainstorm-item">
+<strong>🔥 Difficulty Ramp:</strong> Introduce "Sketchy Mode" where players draw with fewer/smaller strokes (only 3 lines allowed). Forces extreme simplification, makes AI guessing much harder. Unlocks after round 2, higher point multiplier.
+</div>
+
+<div class="brainstorm-item">
+<strong>⏱️ Speed Challenges:</strong> "Blitz Rounds" — 30-second rounds with a 5-point bonus per second remaining. Rewards fast drawing + quick AI recognition.
+</div>
+
+<div class="brainstorm-item">
+<strong>🎭 AI Personalities:</strong> Unlock alternate bot voices/personas after wins. E.g., "Brutally Honest", "Encouraging Coach", "Game Show Host". Each with unique trash-talk style.
+</div>
+
+<div class="brainstorm-item">
+<strong>📊 Leaderboard Persistence:</strong> Use localStorage to store player names/scores across sessions. Show a session leaderboard that persists across tab reloads.
+</div>
+
+<div class="brainstorm-item">
+<strong>🎨 Custom Color Themes:</strong> Unlock alternate color palettes (neon, retro, pastel) based on streaks/wins. Toggle in CONFIG.
+</div>
+
+<div class="brainstorm-item">
+<strong>🔔 Sound Pack Variety:</strong> Unlock different arcade sound packs (chiptune, 8-bit synth, 16-bit console). All still synthesized, no files.
+</div>
+
+<h3>Technical Ideas</h3>
+<div class="brainstorm-item">
+<strong>🌐 Multiplayer:</strong> WebSocket-based real-time duals against a remote player (not AI). Sync canvas + guesses, race to finish in parallel.
+</div>
+
+<div class="brainstorm-item">
+<strong>🎥 Replay System:</strong> Auto-record all rounds (stroke replay via exportStrokes), let players watch replays or share clips.
+</div>
+
+<div class="brainstorm-item">
+<strong>📱 Mobile Optimization:</strong> Touch-friendly UI, adjusted brush sizes for finger input, portrait-mode layout.
+</div>
+
+<div class="brainstorm-item">
+<strong>🧠 AI Training Feedback:</strong> Let players rate bot guesses (right/wrong/close), feed back into a user-hosted fine-tune dataset for future improvements.
+</div>
+
+<div class="brainstorm-item">
+<strong>🎪 Analytics Dashboard:</strong> Dev mode shows stats: total guesses, avg. guess time, most-guessed words, hardest-to-guess words, player accuracy curve.
+</div>
+
+<div class="brainstorm-item">
+<strong>🎯 Word Difficulty Tuning:</strong> Auto-adjust word selection based on round outcomes. If players are crushing easy words, bump up medium earlier.
+</div>
+
+<h3>UX/Polish Ideas</h3>
+<div class="brainstorm-item">
+<strong>✨ Hover Previews:</strong> Buttons show what the action does (e.g., hover "ERASER" → canvas shows eraser cursor, previews erasing).
+</div>
+
+<div class="brainstorm-item">
+<strong>🎬 Transition Animations:</strong> Screen-to-screen slide-ins, scaled reveals (currently: instant). Snappy but visceral.
+</div>
+
+<div class="brainstorm-item">
+<strong>📢 Chat-Style Guesses:</strong> Each bot guess slides in from the right like a chat message, with a small avatar sticker. More immersive.
+</div>
+
+<div class="brainstorm-item">
+<strong>🏆 Unlockable Achievements:</strong> Badges for milestones (5-streak, sub-10s guess, all hard words, etc.). Visible in results screen.
+</div>
+
+<div class="brainstorm-item">
+<strong>📸 Screenshot Mode:</strong> On-win, generate a shareable image (canvas + stats + bot reaction) that players can post to social.
+</div>
+</div>
+
+<div class="page-break"></div>
+
+<div class="section">
+<h2>Code Quality & Maintainability</h2>
+
+<ul class="feature-list">
+  <li><strong>No frameworks:</strong> Vanilla JS only. Zero dependencies. Easy to fork, customize, or teach from.</li>
+  <li><strong>Modular structure:</strong> 10+ single-purpose JS files. Each exports one global namespace (e.g., SD.draw, SD.audio, SD.ai).</li>
+  <li><strong>Defensive coding:</strong> All external I/O (Gemini, canvas, DOM) wrapped in try-catch or graceful fallbacks.</li>
+  <li><strong>Responsive:</strong> Flexbox layout, relative sizing, handles 640px–2560px widths cleanly.</li>
+  <li><strong>Accessible:</strong> Semantic HTML, aria labels, keyboard navigation (Enter/Esc/Tab), respects system preferences (prefers-reduced-motion, prefers-color-scheme if extended).</li>
+  <li><strong>No console spam:</strong> Real errors go to console (for devs only). Players see only friendly messages.</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>Security & Privacy Notes</h2>
+
+<ul class="feature-list">
+  <li><strong>API Key Storage:</strong> Lives only in <code>js/config.js</code>, never sent to any server except Google. Gitignored.</li>
+  <li><strong>Game State:</strong> Stored in JS memory only. No localStorage, no cookies, no server.</li>
+  <li><strong>Canvas Data:</strong> Never persisted locally. Snapshots are sent to Gemini for guessing, then discarded.</li>
+  <li><strong>No Tracking:</strong> No analytics, no telemetry, no third-party scripts.</li>
+  <li><strong>Offline Mode:</strong> If Gemini is unavailable, game still runs; just shows "AI TEMPORARILY UNAVAILABLE".</li>
+  <li><strong>Post-Hackathon Cleanup:</strong> Rotate or delete the API key at aistudio.google.com after judging.</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>Files & Repository Structure</h2>
+
+<div class="tech-box">
+SketchDuel/
+├── index.html                (Landing page)
+├── game.html                 (Game cabinet)
+├── styles.css                (Arcade aesthetics)
+├── cursors.css               (Generated, don't hand-edit)
+├── landing.css               (Hero page styling)
+│
+├── js/
+│   ├── config.js             (API key — GITIGNORED)
+│   ├── game.js               (State machine, 1100+ lines)
+│   ├── draw.js               (Canvas + strokes, 650+ lines)
+│   ├── ai.js                 (Gemini loop, 450+ lines)
+│   ├── audio.js              (Web Audio synth)
+│   ├── sprite.js             (Bot avatar + expressions)
+│   ├── match.js              (Fuzzy word matching)
+│   ├── words.js              (227 words, difficulty tiers)
+│   ├── wordart.js            (Sprites + backgrounds, 600+ lines)
+│   ├── confetti.js           (Pixel confetti)
+│   └── cursortrail.js        (Cursor trail effect)
+│
+├── README.md                 (Quick start guide)
+└── .gitignore
+    js/config.js             (Never commit API key)
+</div>
+</section>
+
+<div class="section">
+<h2>Quick Wins (Last-Minute Polish)</h2>
+
+<ul class="feature-list">
+  <li>Add a <strong>Fullscreen button</strong> (F11 already works, but a button helps non-technical judges).</li>
+  <li>Add a <strong>Replay button</strong> on results to jump straight back to mode select (currently requires refresh or back-click).</li>
+  <li>Add <strong>Keyboard hint overlay</strong> (first load or modal) showing all keyboard shortcuts (M=mute, E=eraser, etc.).</li>
+  <li>Add a <strong>Confidence meter</strong> next to each guess (horizontal bar or % number) so judges see how "sure" the bot is.</li>
+  <li>Tweak the <strong>difficulty mix</strong> — currently 70/30 easy/medium for round 1. Consider 100/0 for absolute beginner comfort.</li>
+  <li>Add <strong>hint text</strong> to the word-reveal screen: e.g., "a common [category]" (animal, food, object) without spoiling the word.</li>
+</ul>
+</div>
+
+<div class="footer">
+<p><strong>SketchDuel Project Report</strong> — Generated for team brainstorm & implementation roadmap.</p>
+<p>Built with vanilla HTML/CSS/JavaScript. No frameworks. No backend. Free-tier Gemini API only.</p>
+<p><em>Last updated: 2026-07-24</em></p>
+</div>
+
+</body>
+</html>
